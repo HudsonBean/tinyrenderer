@@ -19,13 +19,16 @@ void drawLine(int ax, int ay, int bx, int by, TGAImage &framebuffer,
     std::swap(ax, bx);
     std::swap(ay, by);
   }
+  int y = ay;
+  int ierror = 0;
   for (int x = ax; x <= bx; x++) {
-    float t = (x - ax) / static_cast<float>(bx - ax);
-    int y = std::round(ay + (by - ay) * t);
     if (steep) // if transposed, de−transpose
       framebuffer.set(y, x, color);
     else
       framebuffer.set(x, y, color);
+    ierror += 2 * std::abs(by - ay);
+    y += (by > ay ? 1 : -1) * (ierror > bx - ax);
+    ierror -= 2 * (bx - ax) * (ierror > bx - ax);
   }
 }
 
