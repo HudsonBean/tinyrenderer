@@ -1,12 +1,61 @@
 #include "tgaimage.h"
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <string>
+#include <vector>
 
 constexpr TGAColor white = {255, 255, 255, 255}; // attention, BGRA order
 constexpr TGAColor green = {0, 255, 0, 255};
 constexpr TGAColor red = {0, 0, 255, 255};
 constexpr TGAColor blue = {255, 128, 64, 255};
 constexpr TGAColor yellow = {0, 200, 255, 255};
+
+void cacheFaceDataFromFile(std::string fileName,
+                           std::vector<std::array<int, 3>> &faces) {
+  // Open file
+  std::ifstream file(fileName);
+
+  // See if file opened
+  if (!file.is_open()) {
+    std::cerr << "Error Occurred: Could not open file:  " << fileName << "  ."
+              << std::endl;
+  }
+
+  std::string line;
+  while (std::getline(file, line)) {
+    // Populate faces vector
+    // See if the current line is face data
+    if (line[0] == 'f') {
+      std::array<int, 3> temp;
+      int lastCharacterIndex = 0;
+
+      for (int i = 0; i <= 2; i++) {
+        std::string vertex;
+        // Get the char right after each space
+        int vertexCharacterIndex = line.find(' ', lastCharacterIndex) + 1;
+
+        // Loop until we reach the '/'
+        while (line[vertexCharacterIndex] != '/') {
+          vertex += line[vertexCharacterIndex];
+          vertexCharacterIndex++;
+        }
+
+        temp[i] = std::stoi(vertex);
+        lastCharacterIndex = vertexCharacterIndex;
+      }
+
+      faces.push_back(temp);
+    }
+  }
+  // for (const std::array<int, 3> a : faces) {
+  //   std::cout << "–––––––––––––––––" << std::endl;
+  //   for (const int b : a) {
+  //     std::cout << b << std::endl;
+  //   }
+  //   std::cout << "–––––––––––––––––" << std::endl;
+  // }
+}
 
 void drawLine(int ax, int ay, int bx, int by, TGAImage &framebuffer,
               TGAColor color) {
@@ -37,13 +86,8 @@ int main(int argc, char **argv) {
   constexpr int height = 64;
   TGAImage framebuffer(width, height, TGAImage::RGB);
 
-  int ax = 7, ay = 3;
-  int bx = 12, by = 37;
-  int cx = 62, cy = 53;
-
-  drawLine(ax, ay, bx, by, framebuffer, blue);
-  drawLine(cx, cy, bx, by, framebuffer, green);
-  drawLine(ax, ay, cx, cy, framebuffer, red);
+  std::vector<std::array<int, 3>> faces;
+  cacheFaceDataFromFile("./obj/diablo3_pose/diablo3_pose.obj", faces);
 
   framebuffer.write_tga_file("framebuffer.tga");
   return 0;
