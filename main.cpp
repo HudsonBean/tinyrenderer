@@ -117,26 +117,47 @@ void drawLine(int ax, int ay, int bx, int by, TGAImage &framebuffer,
   }
 }
 
-void drawTriangle(int vertexA, int vertexB, int vertexC) {}
+void drawTriangle(const std::array<int, 3> &face,
+                  std::vector<std::array<float, 3>> &vertices,
+                  TGAImage &framebuffer, TGAColor color) {
+  const int width = framebuffer.width(); // or pass width/height in
+  const int height = framebuffer.height();
+  const float cameraZ = 2.f;
+
+  const auto &A = vertices[face[0]];
+  const auto &B = vertices[face[1]];
+  const auto &C = vertices[face[2]];
+
+  float az = A[2] + cameraZ;
+  int ax = static_cast<int>(A[0] / az * width / 2 + width / 2);
+  int ay = static_cast<int>(A[1] / az * height / 2 + height / 2);
+  float bz = B[2] + cameraZ;
+  int bx = static_cast<int>(B[0] / bz * width / 2 + width / 2);
+  int by = static_cast<int>(B[1] / bz * height / 2 + height / 2);
+  float cz = C[2] + cameraZ;
+  int cx = static_cast<int>(C[0] / cz * width / 2 + width / 2);
+  int cy = static_cast<int>(C[1] / cz * height / 2 + height / 2);
+
+  drawLine(ax, ay, bx, by, framebuffer, color);
+  drawLine(bx, by, cx, cy, framebuffer, color);
+  drawLine(cx, cy, ax, ay, framebuffer, color);
+}
 
 int main(int argc, char **argv) {
-  constexpr int width = 64;
-  constexpr int height = 64;
+  constexpr int width = 800;
+  constexpr int height = 800;
   TGAImage framebuffer(width, height, TGAImage::RGB);
 
   std::vector<std::array<float, 3>> vertices;
   cacheVerticesFromFile("./obj/diablo3_pose/diablo3_pose.obj", vertices);
 
-  for (const std::array<float, 3> a : vertices) {
-    std::cout << "–––––––––––––––––" << std::endl;
-    for (const float b : a) {
-      std::cout << b << std::endl;
-    }
-    std::cout << "–––––––––––––––––" << std::endl;
-  }
-
   std::vector<std::array<int, 3>> faces;
   cacheFacesFromFile("./obj/diablo3_pose/diablo3_pose.obj", faces);
+
+  // Draw triangles
+  for (const std::array<int, 3> &face : faces) {
+    drawTriangle(face, vertices, framebuffer, red);
+  }
 
   framebuffer.write_tga_file("framebuffer.tga");
   return 0;
