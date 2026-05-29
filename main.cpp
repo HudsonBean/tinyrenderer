@@ -11,12 +11,46 @@ constexpr TGAColor red = {0, 0, 255, 255};
 constexpr TGAColor blue = {255, 128, 64, 255};
 constexpr TGAColor yellow = {0, 200, 255, 255};
 
-void cacheFaceDataFromFile(std::string fileName,
-                           std::vector<std::array<int, 3>> &faces) {
-  // Open file
+void cacheVerticesFromFile(std::string fileName,
+                           std::vector<std::array<float, 3>> &vertices) {
   std::ifstream file(fileName);
 
-  // See if file opened
+  if (!file.is_open()) {
+    std::cerr << "Error Occurred: Could not open file:  " << fileName << "  ."
+              << std::endl;
+  }
+
+  std::string line;
+  while (std::getline(file, line)) {
+    if (line.size() >= 2 && line[0] == 'v' && line[1] == ' ') {
+      std::array<float, 3> temp;
+      int lastCharacterIndex = 0;
+
+      for (int i = 0; i <= 2; i++) {
+        std::string vertex;
+        // Get the char right after each space
+        int vertexCharacterIndex = line.find(' ', lastCharacterIndex) + 1;
+
+        // Loop until we reach the ' '
+        while (vertexCharacterIndex < line.size() &&
+               line[vertexCharacterIndex] != ' ') {
+          vertex += line[vertexCharacterIndex];
+          vertexCharacterIndex++;
+        }
+
+        temp[i] = std::stof(vertex);
+        lastCharacterIndex = vertexCharacterIndex;
+      }
+
+      vertices.push_back(temp);
+    }
+  }
+}
+
+void cacheFacesFromFile(std::string fileName,
+                        std::vector<std::array<int, 3>> &faces) {
+  std::ifstream file(fileName);
+
   if (!file.is_open()) {
     std::cerr << "Error Occurred: Could not open file:  " << fileName << "  ."
               << std::endl;
@@ -36,12 +70,14 @@ void cacheFaceDataFromFile(std::string fileName,
         int vertexCharacterIndex = line.find(' ', lastCharacterIndex) + 1;
 
         // Loop until we reach the '/'
-        while (line[vertexCharacterIndex] != '/') {
+        while (vertexCharacterIndex < line.size() &&
+               line[vertexCharacterIndex] != '/') {
           vertex += line[vertexCharacterIndex];
           vertexCharacterIndex++;
         }
 
-        temp[i] = std::stoi(vertex);
+        temp[i] = std::stoi(vertex) -
+                  1; // Decrement by 1 since the indices start at 1
         lastCharacterIndex = vertexCharacterIndex;
       }
 
@@ -81,13 +117,26 @@ void drawLine(int ax, int ay, int bx, int by, TGAImage &framebuffer,
   }
 }
 
+void drawTriangle(int vertexA, int vertexB, int vertexC) {}
+
 int main(int argc, char **argv) {
   constexpr int width = 64;
   constexpr int height = 64;
   TGAImage framebuffer(width, height, TGAImage::RGB);
 
+  std::vector<std::array<float, 3>> vertices;
+  cacheVerticesFromFile("./obj/diablo3_pose/diablo3_pose.obj", vertices);
+
+  for (const std::array<float, 3> a : vertices) {
+    std::cout << "–––––––––––––––––" << std::endl;
+    for (const float b : a) {
+      std::cout << b << std::endl;
+    }
+    std::cout << "–––––––––––––––––" << std::endl;
+  }
+
   std::vector<std::array<int, 3>> faces;
-  cacheFaceDataFromFile("./obj/diablo3_pose/diablo3_pose.obj", faces);
+  cacheFacesFromFile("./obj/diablo3_pose/diablo3_pose.obj", faces);
 
   framebuffer.write_tga_file("framebuffer.tga");
   return 0;
